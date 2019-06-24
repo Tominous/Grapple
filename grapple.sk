@@ -1,3 +1,4 @@
+options:
 #	  sSSSSs   .S_sSSs     .S_SSSs     .S_sSSs     .S_sSSs    S.        sSSs
 #	 d%%%%SP  .SS~YS%%b   .SS~SSSSS   .SS~YS%%b   .SS~YS%%b   SS.      d%%SP
 #	d%S'      S%S   `S%b  S%S   SSSS  S%S   `S%b  S%S   `S%b  S%S     d%S'  
@@ -21,36 +22,36 @@
 #		|_.__/ \__, | |_| |_| |_|\___|\___/_/\_\
 #		        __/ |                           
 #		       |___/                            
+#
+#
+# Settings:
+	version_check: true # Set to false if you don't want Grapple to check for new versions
+	version_message: true # Set to false if you don't want a update message - only visible for players with the permission grapple.main
 
-# OPTIONS
-options:
 	prefix: "&c[&6Grapple&c]&r" # The prefix for the commands
 	message: "&fYou gave &e[player]&f a &6grappling hook&f." # What the give message would be.
+	permission_message: &cSorry, you don't have permission for this command. # Message the player will receive when they don't have permissions - only for commands
 
 	name: "&6Grappling Hook" # What the name of the grappling hook should be
-	glowing: true
+	glowing: true # If the fishing rod should have a glowing/enchanted look.
 
-	self velocity: 2 # How fast and far the player will go when the player grapple's
-	players velocity: 2 # How fast and far the player's will go when a player grapple's them
-	entity velocity: 3 # How fast and far entity's will go when a player grapple's them
-	item velocity: 1 # How fast and far an item will go when a player grapple's it
+	self_velocity: 2 # How fast and far the player will go when the player grapple's
+	players_velocity: 2 # How fast and far the player's will go when a player grapple's them
+	entity_velocity: 3 # How fast and far entity's will go when a player grapple's them
+	item_velocity: 1 # How fast and far an item will go when a player grapple's it
 
-	only in ground: false # If the grappling hook needs to be in the ground to work * It's glitchy if it's enabled
-
-
-
-
-
-
-
-
-
+	only_in_ground: false # If the grappling hook needs to be in the ground to work * It's glitchy if it's enabled
+	fall_damage_on_use: false # False if you don't want to give falldamage if player is holding a grappling hook
 
 #
 #
-# Edit this if you know what you're doing.
+# >>> You should not change anything below the line unless you know what you are doing
+# >>> You should not change anything below the line unless you know what you are doing
+# >>> You should not change anything below the line unless you know what you are doing
 #
 #
+
+	version: 0.2 # Don't change this, this is your current version of Grapple
 
 
 
@@ -58,6 +59,7 @@ command /grapplinghook <player=%player%>:
 	aliases: /gh, /grapple
 	description: Receive a grapplinghook.
 	permission:	grapple.give
+	permission message: {@permission_message}
 	executable by: players
 	trigger:
 		set {_message} to join {@prefix} and {@message} with delimiter " "
@@ -68,26 +70,74 @@ command /grapplinghook <player=%player%>:
 		else:
 			give arg-1 1 of fishing rod named {@name}
 
+command /ghm <text=ver>:
+	description: Grapple main command
+	permission: grapple.main
+	permission message: {@permission_message}
+	trigger:
+		if arg-1 = "ver":
+			set {_message} to join {@prefix} and "&fYou are currently running &6Grapple &fversion:&e {@version}" with delimiter " "
+			message {_message}
+		else if arg-1 = "reload":
+			set {_message} to join {@prefix} and "&cCurrently reloading &6Grapple" with delimiter " "
+			message {_message}
+			set {_p} to sender
+			set {grapple.reload} to {_p}
+			wait 7 ticks
+			console command "skript reload grapple.sk"
+
+on load:
+	if {grapple.reload} is set:
+		wait 7 ticks
+		set {_message} to join {@prefix} and "&aSuccesfully reloaded &6Grapple" with delimiter " "
+		message {_message} to {grapple.reload}
+		clear {grapple.reload}
+	else:
+		set {_message} to join {@prefix} and "&fEnabling &6Grapple &f{@version}" with delimiter " "
+		message {_message} to console
+		wait 2 seconds
+		if {@version_check} = true:
+			set {_version::*} to url "https://pastebin.com/raw/GWSeaNTw"'s contents
+			set {_vers} to {_version::1}
+			set {_versa} to "{@version}" 
+			if {_versa} is not {_vers}:
+				set {_message} to join {@prefix} and "&aNew update available: &e%{_version::1}%" with delimiter " "
+				message {_message} to console
+				if {@version_message} = true:
+					loop all players:
+						if loop-player has permission "grapple.main":
+							message {_message} to loop-player
+							message "&fUpdate contains:" to loop-player
+							loop {_version::*}:
+								if loop-value-2 is not {_version::1}:
+									message colored loop-value-2 to loop-player
+
 
 on player fishing:
 	if name of tool of player is {@name}:
 		if caught entity is not set:
-			if {@only in ground} is true:
+			if {@only_in_ground} is true:
 				if fishing state is in ground:
 					if player has the permission "grapple.pull.self":
-						push player (direction from player to location of hook) at speed {@self velocity}
+						push player (direction from player to location of hook) at speed {@self_velocity}
 			else:
 				if fishing state is not fishing:
 					if player has the permission "grapple.pull.self":
-						push player (direction from player to location of hook) at speed {@self velocity}
+						push player (direction from player to location of hook) at speed {@self_velocity}
 		if caught entity is set:
 			if caught entity is a dropped item:
 				if player has the permission "grapple.pull.items":
-					push caught entity (direction from caught entity to location of player) at speed {@item velocity}
+					push caught entity (direction from caught entity to location of player) at speed {@item_velocity}
 			else if caught entity is a player:
 				if caught entity doesn't have permission "grapple.nopull":
 					if player has the permission "grapple.pull.players":
-						push caught entity (direction from caught entity to location of player) at speed {@players velocity}
+						push caught entity (direction from caught entity to location of player) at speed {@players_velocity}
 			else:
 				if player has the permission "grapple.pull.entities":
-					push caught entity (direction from caught entity to location of player) at speed {@entity velocity}
+					push caught entity (direction from caught entity to location of player) at speed {@entity_velocity}
+
+on damage:
+	if {@fall_damage_on_use} is false:
+		if damage cause is fall:
+			if name of tool of victim is {@name}:
+				cancel event
